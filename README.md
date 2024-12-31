@@ -1,2 +1,1 @@
-# Wallet
-A Paytm Wallet like Project
+Updating README
