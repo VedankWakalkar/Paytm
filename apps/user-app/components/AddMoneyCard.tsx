@@ -20,7 +20,7 @@ export function AddMoney(){
             <TextInput label={"Amount"} placeholder={"Amount"} onChange={()=>{
 
             }}></TextInput>
-            <div className="py-4 text-left">
+            <div className="py-4 text-left w-full">
                 Bank
             </div>
             <Select onSelect={(value)=>{
