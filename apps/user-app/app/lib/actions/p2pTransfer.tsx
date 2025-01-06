@@ -9,32 +9,25 @@ export async function p2pTransfer(to: string, amount: number) {
     const session = await getServerSession(authOptions);
     const from = session?.user?.id;
     if (!from) {
-      return { success: false, message: "Error while sending: User not authenticated" };
+      return { success: false, message: "User not authenticated" };
     }
 
     // Find the recipient user by phone number
-    const toUser = await prisma.user.findFirst({
-      where: { number: to },
-    });
-
+    const toUser = await prisma.user.findFirst({ where: { number: to } });
     if (!toUser) {
-        return { success: false, message: "Recipient user not found" };
-      }
-
-    const toUserBalance= await prisma.balance.findFirst({
-        where:{
-            userId:Number(toUser?.id)
-        }
-    })
-    if(!toUserBalance){
-        await prisma.balance.create({
-            data:{
-                amount:0,
-                locked:0,
-                userId:Number(toUser?.id)
-            }
-        })
+      return { success: false, message: "Recipient user not found" };
     }
+
+    // Ensure recipient balance exists
+    await prisma.balance.upsert({
+      where: { userId: Number(toUser.id) },
+      update: {},
+      create: {
+        amount: 0,
+        locked: 0,
+        userId: Number(toUser.id),
+      },
+    });
 
     // Execute the transaction
     await prisma.$transaction(async (tx) => {
@@ -46,19 +39,29 @@ export async function p2pTransfer(to: string, amount: number) {
       if (!fromBalance || fromBalance.amount < amount) {
         throw new Error("Insufficient funds");
       }
-      await new Promise(r => setTimeout(r, 4000));
+
       // Deduct amount from sender
-      await tx.balance.update({ 
+      await tx.balance.update({
         where: { userId: Number(from) },
         data: { amount: { decrement: amount } },
       });
-      console.log("passes the deduct request")
+
       // Add amount to recipient
       await tx.balance.update({
-        where: { userId: toUser.id },
+        where: { userId: Number(toUser.id) },
         data: { amount: { increment: amount } },
-      });   
-      console.log("passes the update request")
+      });
+
+      // update the entry in p2p transaction
+      await tx.p2pTransfer.create({
+        data: {
+            fromUserId: Number(from),
+            toUserId: toUser.id,
+            amount,
+            timestamp: new Date()
+        }
+      })
+
     });
 
     return { success: true, message: "Transfer successful" };
