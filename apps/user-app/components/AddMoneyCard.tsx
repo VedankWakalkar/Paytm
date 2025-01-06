@@ -39,7 +39,7 @@ export function AddMoney(){
                 <Button onClick={async()=>{
                     await creatOnRamptxns(amount,provider)
                     window.location.href=redirectUrl||"";
-                }}>AddMoney</Button>
+                }}>Add Money</Button>
             </div>
         </div>
     </Card>
