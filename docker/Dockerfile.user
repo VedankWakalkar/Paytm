@@ -9,6 +9,6 @@ COPY packages ./packages
 
 RUN npm install
 
-RUN db:generate
+RUN cd packages/db && npx prisma generate && cd ../..
 
 CMD [ "npm","run","start-user-app" ]
